@@ -9,6 +9,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Public/MyAnimInstance.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AGE_F2Character
@@ -158,49 +159,46 @@ void AGE_F2Character::BeginPlay()
 
 void AGE_F2Character::Tick(float DeltaTime)
 {
+	UMyAnimInstance* FPAnim = Cast<UMyAnimInstance>(GetMesh()->GetAnimInstance());
+	if (!FPAnim)
+		return;
 	if (GetVelocity().Size() == 0)
 	{
 		TArray<AActor*> ActorsToIgnore;
 		FHitResult LeftTraceHit;
-		FRotator LeftFootRot = GetActorRotation();// here
+
 		const FVector LeftFootLocation = GetTransform().TransformPosition(LeftFootBoneRelativeLocation);
 		bool bLeftFootTraceHit = UKismetSystemLibrary::SphereTraceSingle(this, LeftFootLocation + FVector(0.f, 0.f, 50.f),
 			LeftFootLocation + FVector(0.f, 0.f, -100.f), 10, ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
 			EDrawDebugTrace::ForOneFrame, LeftTraceHit, true);
+
 		FHitResult RightTraceHit;
 		const FVector RightFootLocation = GetTransform().TransformPosition(RightFootBoneRelativeLocation);
 		bool bRightFootTraceHit = UKismetSystemLibrary::SphereTraceSingle(this, RightFootLocation + FVector(0.f, 0.f, 50.f),
 			RightFootLocation + FVector(0.f, 0.f, -100.f), 10, ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
 			EDrawDebugTrace::ForOneFrame, RightTraceHit, true);
-	}
-	if (GetVelocity().Size() == 0)
-	{
-		TArray<AActor*> ActorsToIgnore;
-		FHitResult LeftTraceHit;
-		const FVector LeftFootLocation = GetTransform().TransformPosition(LeftFootBoneRelativeLocation);
-		bool bLeftFootTraceHit = UKismetSystemLibrary::SphereTraceSingle(this, LeftFootLocation + FVector(0.f, 0.f, 50.f),
-			LeftFootLocation + FVector(0.f, 0.f, -100.f), 10, ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
-			EDrawDebugTrace::ForOneFrame, LeftTraceHit, true);
-		FHitResult RightTraceHit;
-		const FVector RightFootLocation = GetTransform().TransformPosition(RightFootBoneRelativeLocation);
-		bool bRightFootTraceHit = UKismetSystemLibrary::SphereTraceSingle(this, RightFootLocation + FVector(0.f, 0.f, 50.f),
-			RightFootLocation + FVector(0.f, 0.f, -100.f), 10, ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
-			EDrawDebugTrace::ForOneFrame, RightTraceHit, true);
+
 		float ZOffset = 0;
 		if (LeftTraceHit.ImpactPoint.Z < RightTraceHit.ImpactPoint.Z)
 		{
 			ZOffset = LeftFootLocation.Z - LeftTraceHit.ImpactPoint.Z;
+			FPAnim->SetRightFootEffectorLocation(RightTraceHit.ImpactPoint + FVector(0.f, 0.f, 14.f));
+			FPAnim->SetLeftFootAlpha(0.f);
+			FPAnim->SetRightFootAlpha(1.f);
 		}
 		else
 		{
 			ZOffset = RightFootLocation.Z - RightTraceHit.ImpactPoint.Z;
+			FPAnim->SetLeftFootEffectorLocation(LeftTraceHit.ImpactPoint + FVector(0.f, 0.f, 14.f));
+			FPAnim->SetLeftFootAlpha(1.f);
+			FPAnim->SetRightFootAlpha(0.f);
 		}
-		//14.f is the foot height... to compensate from the ankle bone to the floor of the level
 		GetMesh()->SetRelativeLocation(InitialMeshRelativeLocation + FVector(0.f, 0.f, -ZOffset + 14.f));
 	}
 	else
 	{
 		GetMesh()->SetRelativeLocation(InitialMeshRelativeLocation);
+		FPAnim->SetLeftFootAlpha(0.f);
+		FPAnim->SetRightFootAlpha(0.f);
 	}
-
 }
